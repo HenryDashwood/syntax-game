@@ -1,8 +1,10 @@
 import os
 import re
-from flask import Flask, render_template, jsonify, request
-from voice import AudioRecorder
+
+from flask import Flask, jsonify, render_template, request
+
 import claude
+from voice import AudioRecorder
 
 app = Flask(__name__)
 
@@ -10,6 +12,7 @@ app = Flask(__name__)
 # This is a simplification. For production, you might manage this differently
 # (e.g., per-user sessions if multiple users could record simultaneously).
 recorder = AudioRecorder()
+
 
 def parse_level_content(level_number):
     """Return objective text and code text for the given level number."""
@@ -62,7 +65,7 @@ def index():
     return render_template("index.html", current_level=current_level, objective=objective, code=code)
 
 
-@app.route("/start_record", methods=['POST'])
+@app.route("/start_record", methods=["POST"])
 def start_record_route():
     try:
         recorder.start_recording()
@@ -70,11 +73,12 @@ def start_record_route():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/stop_record", methods=['POST'])
+
+@app.route("/stop_record", methods=["POST"])
 def stop_record_route():
     try:
         result = recorder.stop_recording()
-        if result and hasattr(result, 'text'):
+        if result and hasattr(result, "text"):
             transcription_text = result.text
             return jsonify({"status": "success", "transcription_text": transcription_text})
         elif result:
@@ -84,15 +88,16 @@ def stop_record_route():
         else:
             return jsonify({"status": "success", "message": "No audio data recorded or transcription failed"})
     except Exception as e:
-        print(f"Error in /stop_record: {e}") # Log the full error on the server
+        print(f"Error in /stop_record: {e}")  # Log the full error on the server
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/ai_modify_code", methods=['POST'])
+
+@app.route("/ai_modify_code", methods=["POST"])
 def ai_modify_code_route():
     try:
         data = request.get_json()
-        current_code = data.get('current_code')
-        transcription = data.get('transcription')
+        current_code = data.get("current_code")
+        transcription = data.get("transcription")
 
         if not current_code or not transcription:
             return jsonify({"status": "error", "message": "Missing current_code or transcription"}), 400
@@ -100,11 +105,12 @@ def ai_modify_code_route():
         print(f"Calling Claude with code:\n{current_code}\nInstruction: {transcription}")
         modified_code = claude.generate_modified_code(current_code, transcription)
         print(f"Claude returned modified code:\n{modified_code}")
-        
+
         return jsonify({"status": "success", "modified_code": modified_code})
     except Exception as e:
         print(f"Error in /ai_modify_code: {e}")
         return jsonify({"status": "error", "message": f"Error processing with AI: {str(e)}"}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
