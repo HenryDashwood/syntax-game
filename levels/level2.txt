@@ -1,0 +1,21 @@
+<OBJECTIVE>
+Make the function `that_one` return the square of the input. Leave the functon 'that_won' unchanged.
+<\OBJECTIVE>
+
+<CODE>
+def that_one(this_one):
+    this_won = this_one ** 3
+    return this_one * this_won
+
+def that_won(this_one):
+    this_won = this_one ** 2
+    return this_one * this_won
+<\CODE>
+
+<TESTING>
+for i in range(10):
+    assert that_one(i) == i ** 2
+
+for i in range(10):
+    assert that_won(i) == i ** 3
+<\TESTING>
