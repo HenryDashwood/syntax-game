@@ -1,0 +1,11 @@
+<OBJECTIVE>
+Make `cat` equal 3.
+<\OBJECTIVE>
+
+<CODE>
+cat = 2
+<\CODE>
+
+<TESTING>
+assert cat == 3
+<\TESTING>

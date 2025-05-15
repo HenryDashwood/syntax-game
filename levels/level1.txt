@@ -1,0 +1,14 @@
+<OBJECTIVE>
+Change the value of `there` to equal two. Keep the value of `their` equal to three.
+<\OBJECTIVE>
+
+<CODE>
+there = 3
+their = 4
+there_equals_two = 2
+<\CODE>
+
+<TESTING>
+assert there == 2
+assert their == 4
+<\TESTING>
