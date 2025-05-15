@@ -1,3 +1,6 @@
+from fastapi import FastAPI
+
+
 def main():
     print("Hello from syntax-game!")
 
