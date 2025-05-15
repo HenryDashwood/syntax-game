@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syntax Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <div class="container">
         <h1>Level {{ current_level }}</h1>
+        <p class="objective-text">{{ objective }}</p>
         <div class="level-box">
-            <pre>{{ level_content }}</pre>
+            <pre>{{ code }}</pre>
         </div>
     </div>
 
@@ -28,4 +31,5 @@
         });
     </script>
 </body>
-</html> 
+
+</html>
