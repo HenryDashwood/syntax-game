@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syntax Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
@@ -18,6 +19,7 @@
         <div class="button-container">
             <button id="recordBtn" class="action-button">Record</button>
             <button id="applyAiChangesBtn" class="action-button apply-ai-button">Apply AI Changes</button>
+            <button id="submitBtn" class="action-button submit-button" style="display: none;">Submit Solution</button>
         </div>
         <div id="transcriptionOutputContainer" class="output-container">
             <h3>Transcription:</h3>
@@ -27,23 +29,191 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
-            let currentLevel = localStorage.getItem('currentLevel');
-            if (!currentLevel) {
-                currentLevel = '1'; // Default to level 1 if not set
-                localStorage.setItem('currentLevel', currentLevel);
-            }
-            // For now, we are not dynamically loading content based on localStorage on the frontend
-            // as app.py is already sending the content for level 1.
-            // This script primarily sets up localStorage for future use.
-            console.log('Current level from localStorage:', currentLevel);
+            let currentLevel = localStorage.getItem('currentLevel') || '1';
+            localStorage.setItem('currentLevel', currentLevel);
 
             const recordButton = document.getElementById('recordBtn');
             const transcriptionTextElement = document.getElementById('transcriptionText');
             const transcriptionOutputContainer = document.getElementById('transcriptionOutputContainer');
             const applyAiButton = document.getElementById('applyAiChangesBtn');
-            const codePreElement = document.querySelector('.level-box pre'); // Get the <pre> tag for code
+            const codePreElement = document.querySelector('.level-box pre');
+            const submitButton = document.getElementById('submitBtn');
 
             let isRecording = false;
+            let currentCode = codePreElement.textContent;
+
+            // Function to update the code display
+            function updateCodeDisplay(newCode) {
+                codePreElement.textContent = newCode;
+                currentCode = newCode;
+                // Show submit button when code is modified
+                submitButton.style.display = 'inline-block';
+            }
+
+            // Function to show a message to the user
+            function showMessage(message, isError = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isError ? 'error' : 'success'}`;
+                messageDiv.textContent = message;
+                document.querySelector('.container').appendChild(messageDiv);
+                setTimeout(() => messageDiv.remove(), 5000);
+            }
+
+            // Function to trigger confetti celebration
+            function triggerConfetti() {
+                const duration = 3 * 1000;
+                const animationEnd = Date.now() + duration;
+                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+                function randomInRange(min, max) {
+                    return Math.random() * (max - min) + min;
+                }
+
+                const interval = setInterval(function () {
+                    const timeLeft = animationEnd - Date.now();
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval);
+                    }
+
+                    const particleCount = 50 * (timeLeft / duration);
+
+                    // Launch confetti from multiple angles
+                    confetti({
+                        ...defaults,
+                        particleCount,
+                        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                    });
+                    confetti({
+                        ...defaults,
+                        particleCount,
+                        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                    });
+                }, 250);
+            }
+
+            // Function to load level content
+            async function loadLevelContent(level) {
+                try {
+                    const response = await fetch(`/?level=${level}`);
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Update the page content
+                    document.querySelector('h1').textContent = `Level ${level}`;
+                    document.querySelector('.objective-text').textContent = doc.querySelector('.objective-text').textContent;
+                    document.querySelector('.level-box pre').textContent = doc.querySelector('.level-box pre').textContent;
+
+                    // Reset the UI state
+                    transcriptionTextElement.textContent = '';
+                    transcriptionOutputContainer.style.display = 'none';
+                    submitButton.style.display = 'none';
+                    currentCode = doc.querySelector('.level-box pre').textContent;
+
+                    // Update the URL without reloading
+                    window.history.pushState({}, '', `/?level=${level}`);
+                } catch (error) {
+                    showMessage('Error loading next level: ' + error.message, true);
+                }
+            }
+
+            // Function to transition to next level
+            async function transitionToNextLevel(nextLevel) {
+                // Show confetti
+                triggerConfetti();
+
+                // Show success message
+                showMessage("Congratulations! Moving to level " + nextLevel);
+
+                // Update level in localStorage
+                currentLevel = nextLevel;
+                localStorage.setItem('currentLevel', currentLevel);
+
+                // Wait for confetti animation to complete before loading next level
+                setTimeout(async () => {
+                    await loadLevelContent(nextLevel);
+                }, 3000);
+            }
+
+            // Function to run the code and tests
+            async function runCodeAndTests(code) {
+                try {
+                    // Get the current level from the page title
+                    const levelMatch = document.querySelector('h1').textContent.match(/Level (\d+)/);
+                    const currentLevel = levelMatch ? levelMatch[1] : '1';
+
+                    console.log('Running tests for level:', currentLevel); // Debug log
+
+                    const response = await fetch('/run_code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            current_level: currentLevel,
+                            modified_code: code
+                        })
+                    });
+
+                    const data = await response.json();
+                    console.log('Test response:', data); // Debug log
+
+                    if (data.status === 'success') {
+                        await transitionToNextLevel(data.next_level);
+                    } else {
+                        showMessage(data.error || data.message, true);
+                    }
+                } catch (error) {
+                    showMessage('Error running code: ' + error.message, true);
+                }
+            }
+
+            // Handle submit button click
+            submitButton.addEventListener('click', async () => {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Submitting...';
+                try {
+                    await runCodeAndTests(currentCode);
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Submit Solution';
+                }
+            });
+
+            // Handle AI code modification
+            applyAiButton.addEventListener('click', async () => {
+                const transcription = transcriptionTextElement.textContent;
+                if (!transcription) {
+                    showMessage('Please record your instructions first', true);
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/ai_modify_code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            current_code: currentCode,
+                            transcription: transcription
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        updateCodeDisplay(data.modified_code);
+                        // Don't automatically run tests anymore
+                        showMessage('Code updated! Click "Submit Solution" to test your changes.');
+                    } else {
+                        showMessage(data.message, true);
+                    }
+                } catch (error) {
+                    showMessage('Error applying AI changes: ' + error.message, true);
+                }
+            });
 
             recordButton.addEventListener('click', async () => {
                 if (!isRecording) {
@@ -93,55 +263,60 @@
                     }
                 }
             });
-
-            applyAiButton.addEventListener('click', async () => {
-                const currentCode = codePreElement.textContent;
-                const transcription = transcriptionTextElement.textContent;
-
-                if (!transcription || transcription === 'Recording...' || transcription === 'Processing...' || transcription.startsWith('Error')) {
-                    alert('Please record a voice command first, or wait for transcription to complete.');
-                    return;
-                }
-                if (!currentCode) {
-                    alert('Could not find code in the code box.');
-                    return;
-                }
-
-                // Optionally show a loading state on the button or code box
-                applyAiButton.textContent = 'Applying AI Changes...';
-                applyAiButton.disabled = true;
-
-                try {
-                    const response = await fetch('/ai_modify_code', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            current_code: currentCode,
-                            transcription: transcription
-                        }),
-                    });
-                    const data = await response.json();
-
-                    if (response.ok && data.status === 'success') {
-                        codePreElement.textContent = data.modified_code;
-                        transcriptionTextElement.textContent = "AI changes applied. Record new instructions if needed.";
-                    } else {
-                        alert('Error applying AI changes: ' + (data.message || 'Unknown error'));
-                        transcriptionTextElement.textContent = "Error applying AI changes: " + (data.message || 'Unknown error');
-                    }
-                } catch (error) {
-                    alert('Network error applying AI changes: ' + error.message);
-                    transcriptionTextElement.textContent = "Network error applying AI changes: " + error.message;
-                    console.error('Network error applying AI changes:', error);
-                } finally {
-                    applyAiButton.textContent = 'Apply AI Changes';
-                    applyAiButton.disabled = false;
-                }
-            });
         });
     </script>
+
+    <style>
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message.success {
+            background-color: #10b981;
+        }
+
+        .message.error {
+            background-color: #ef4444;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .action-button.submit-button {
+            background-color: #8b5cf6;
+            /* Purple color for submit button */
+        }
+
+        .action-button.submit-button:hover {
+            background-color: #7c3aed;
+        }
+
+        .action-button.submit-button:active {
+            background-color: #6d28d9;
+        }
+
+        .action-button.submit-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
 </body>
 
 </html>

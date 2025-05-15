@@ -1,9 +1,13 @@
 import os
 import re
+import subprocess
+import sys
+import tempfile
 
 from flask import Flask, jsonify, render_template, request
 
 import claude
+from file_runner import process_level_file, write_and_run
 from voice import AudioRecorder
 
 app = Flask(__name__)
@@ -60,7 +64,8 @@ def parse_level_content(level_number):
 
 @app.route("/")
 def index():
-    current_level = 1  # For now, always level 1
+    # Get current level from query parameter, default to 1
+    current_level = request.args.get("level", "1")
     objective, code = parse_level_content(current_level)
     return render_template("index.html", current_level=current_level, objective=objective, code=code)
 
@@ -110,6 +115,54 @@ def ai_modify_code_route():
     except Exception as e:
         print(f"Error in /ai_modify_code: {e}")
         return jsonify({"status": "error", "message": f"Error processing with AI: {str(e)}"}), 500
+
+
+@app.route("/run_code", methods=["POST"])
+def run_code_route():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"status": "error", "message": "No data provided"}), 400
+
+        current_level = data.get("current_level", "1")
+        modified_code = data.get("modified_code")
+
+        if not modified_code:
+            return jsonify({"status": "error", "message": "No code provided"}), 400
+
+        # Get the testing code from the level file
+        level_file_path = os.path.join("levels", f"level{current_level}.txt")
+        _, testing = process_level_file(level_file_path)
+
+        # Create a temporary file to run the code
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_file:
+            temp_path = temp_file.name
+            write_and_run(modified_code, testing, temp_path)
+
+            # Check if the file exists and run it
+            if os.path.exists(temp_path):
+                result = subprocess.run([sys.executable, temp_path], capture_output=True, text=True)
+                os.unlink(temp_path)  # Clean up the temporary file
+
+                if result.returncode == 0:
+                    # All tests passed
+                    next_level = str(int(current_level) + 1)
+                    return jsonify(
+                        {
+                            "status": "success",
+                            "message": "Congratulations! All tests passed!",
+                            "next_level": next_level,
+                        }
+                    )
+                else:
+                    # Tests failed
+                    return jsonify({"status": "error", "message": "Tests failed", "error": result.stderr}), 400
+            else:
+                return jsonify({"status": "error", "message": "Failed to create temporary file"}), 500
+
+    except Exception as e:
+        print(f"Error in /run_code: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
