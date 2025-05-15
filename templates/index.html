@@ -18,6 +18,7 @@
         <div class="button-container">
             <button id="startRecordBtn" class="action-button">Start Recording</button>
             <button id="finishRecordBtn" class="action-button">Finish Recording</button>
+            <button id="applyAiChangesBtn" class="action-button apply-ai-button">Apply AI Changes</button>
         </div>
         <div id="transcriptionOutputContainer" class="output-container">
             <h3>Transcription:</h3>
@@ -41,6 +42,8 @@
             const finishButton = document.getElementById('finishRecordBtn');
             const transcriptionTextElement = document.getElementById('transcriptionText');
             const transcriptionOutputContainer = document.getElementById('transcriptionOutputContainer');
+            const applyAiButton = document.getElementById('applyAiChangesBtn');
+            const codePreElement = document.querySelector('.level-box pre'); // Get the <pre> tag for code
 
             startButton.addEventListener('click', async () => {
                 transcriptionTextElement.textContent = 'Recording...';
@@ -80,6 +83,53 @@
                 } catch (error) {
                     transcriptionTextElement.textContent = 'Error stopping recording: ' + error.message;
                     console.error('Network error stopping recording:', error);
+                }
+            });
+
+            applyAiButton.addEventListener('click', async () => {
+                const currentCode = codePreElement.textContent;
+                const transcription = transcriptionTextElement.textContent;
+
+                if (!transcription || transcription === 'Recording...' || transcription === 'Processing...' || transcription.startsWith('Error')) {
+                    alert('Please record a voice command first, or wait for transcription to complete.');
+                    return;
+                }
+                if (!currentCode) {
+                    alert('Could not find code in the code box.');
+                    return;
+                }
+
+                // Optionally show a loading state on the button or code box
+                applyAiButton.textContent = 'Applying AI Changes...';
+                applyAiButton.disabled = true;
+
+                try {
+                    const response = await fetch('/ai_modify_code', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            current_code: currentCode,
+                            transcription: transcription
+                        }),
+                    });
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'success') {
+                        codePreElement.textContent = data.modified_code;
+                        transcriptionTextElement.textContent = "AI changes applied. Record new instructions if needed.";
+                    } else {
+                        alert('Error applying AI changes: ' + (data.message || 'Unknown error'));
+                        transcriptionTextElement.textContent = "Error applying AI changes: " + (data.message || 'Unknown error');
+                    }
+                } catch (error) {
+                    alert('Network error applying AI changes: ' + error.message);
+                    transcriptionTextElement.textContent = "Network error applying AI changes: " + error.message;
+                    console.error('Network error applying AI changes:', error);
+                } finally {
+                    applyAiButton.textContent = 'Apply AI Changes';
+                    applyAiButton.disabled = false;
                 }
             });
         });

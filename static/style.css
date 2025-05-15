@@ -137,6 +137,20 @@ h1 {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.action-button.apply-ai-button {
+    background-color: #2ecc71;
+    /* Green color for AI button */
+}
+
+.action-button.apply-ai-button:hover {
+    background-color: #27ae60;
+    /* Darker green on hover */
+}
+
+.action-button.apply-ai-button:active {
+    background-color: #1e8449;
+}
+
 .output-container {
     margin-top: 30px;
     padding: 20px;

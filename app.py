@@ -1,7 +1,8 @@
 import os
 import re
-from flask import Flask, render_template, jsonify
-from voice import AudioRecorder # Assuming voice.py is in the same directory
+from flask import Flask, render_template, jsonify, request
+from voice import AudioRecorder
+import claude
 
 app = Flask(__name__)
 
@@ -85,6 +86,25 @@ def stop_record_route():
     except Exception as e:
         print(f"Error in /stop_record: {e}") # Log the full error on the server
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/ai_modify_code", methods=['POST'])
+def ai_modify_code_route():
+    try:
+        data = request.get_json()
+        current_code = data.get('current_code')
+        transcription = data.get('transcription')
+
+        if not current_code or not transcription:
+            return jsonify({"status": "error", "message": "Missing current_code or transcription"}), 400
+
+        print(f"Calling Claude with code:\n{current_code}\nInstruction: {transcription}")
+        modified_code = claude.generate_modified_code(current_code, transcription)
+        print(f"Claude returned modified code:\n{modified_code}")
+        
+        return jsonify({"status": "success", "modified_code": modified_code})
+    except Exception as e:
+        print(f"Error in /ai_modify_code: {e}")
+        return jsonify({"status": "error", "message": f"Error processing with AI: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
