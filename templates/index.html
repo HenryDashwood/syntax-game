@@ -16,8 +16,7 @@
             <pre>{{ code }}</pre>
         </div>
         <div class="button-container">
-            <button id="startRecordBtn" class="action-button">Start Recording</button>
-            <button id="finishRecordBtn" class="action-button">Finish Recording</button>
+            <button id="recordBtn" class="action-button">Record</button>
             <button id="applyAiChangesBtn" class="action-button apply-ai-button">Apply AI Changes</button>
         </div>
         <div id="transcriptionOutputContainer" class="output-container">
@@ -44,44 +43,54 @@
             const applyAiButton = document.getElementById('applyAiChangesBtn');
             const codePreElement = document.querySelector('.level-box pre'); // Get the <pre> tag for code
 
-            startButton.addEventListener('click', async () => {
-                transcriptionTextElement.textContent = 'Recording...';
-                transcriptionOutputContainer.style.display = 'block';
-                try {
-                    const response = await fetch('/start_record', { method: 'POST' });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        console.log(data.message);
-                        // Optionally, provide user feedback that recording has started
-                    } else {
-                        transcriptionTextElement.textContent = 'Error: ' + data.message;
-                        console.error('Error starting recording:', data.message);
-                    }
-                } catch (error) {
-                    transcriptionTextElement.textContent = 'Error starting recording: ' + error.message;
-                    console.error('Network error starting recording:', error);
-                }
-            });
+            let isRecording = false;
 
-            finishButton.addEventListener('click', async () => {
-                transcriptionTextElement.textContent = 'Processing...';
-                try {
-                    const response = await fetch('/stop_record', { method: 'POST' });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        if (data.transcription_text) {
-                            transcriptionTextElement.textContent = data.transcription_text;
+            recordButton.addEventListener('click', async () => {
+                if (!isRecording) {
+                    // Start recording
+                    transcriptionTextElement.textContent = 'Recording...';
+                    transcriptionOutputContainer.style.display = 'block';
+                    try {
+                        const response = await fetch('/start_record', { method: 'POST' });
+                        const data = await response.json();
+                        if (data.status === 'success') {
+                            console.log(data.message);
+                            isRecording = true;
+                            recordButton.textContent = 'Stop Recording';
+                            recordButton.classList.add('recording');
                         } else {
-                            transcriptionTextElement.textContent = data.message || 'No transcription available.';
+                            transcriptionTextElement.textContent = 'Error: ' + data.message;
+                            console.error('Error starting recording:', data.message);
                         }
-                        console.log('Transcription result:', data);
-                    } else {
-                        transcriptionTextElement.textContent = 'Error: ' + data.message;
-                        console.error('Error stopping recording:', data.message);
+                    } catch (error) {
+                        transcriptionTextElement.textContent = 'Error starting recording: ' + error.message;
+                        console.error('Network error starting recording:', error);
                     }
-                } catch (error) {
-                    transcriptionTextElement.textContent = 'Error stopping recording: ' + error.message;
-                    console.error('Network error stopping recording:', error);
+                } else {
+                    // Stop recording
+                    transcriptionTextElement.textContent = 'Processing...';
+                    try {
+                        const response = await fetch('/stop_record', { method: 'POST' });
+                        const data = await response.json();
+                        if (data.status === 'success') {
+                            if (data.transcription_text) {
+                                transcriptionTextElement.textContent = data.transcription_text;
+                            } else {
+                                transcriptionTextElement.textContent = data.message || 'No transcription available.';
+                            }
+                            console.log('Transcription result:', data);
+                        } else {
+                            transcriptionTextElement.textContent = 'Error: ' + data.message;
+                            console.error('Error stopping recording:', data.message);
+                        }
+                    } catch (error) {
+                        transcriptionTextElement.textContent = 'Error stopping recording: ' + error.message;
+                        console.error('Network error stopping recording:', error);
+                    } finally {
+                        isRecording = false;
+                        recordButton.textContent = 'Record';
+                        recordButton.classList.remove('recording');
+                    }
                 }
             });
 
