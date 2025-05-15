@@ -7,7 +7,6 @@ body {
     min-height: 100vh;
     margin: 0;
     background-color: #1f2937;
-    /* Darker background */
     padding: 20px 0;
     color: #e5e7eb;
     background-image: linear-gradient(135deg, #1f2937 0%, #111827 100%);
@@ -102,39 +101,66 @@ h1 {
 }
 
 .button-container {
-    margin-top: 35px;
+    margin: 20px 0;
     display: flex;
     justify-content: center;
-    gap: 20px;
-    /* Space between buttons */
+    gap: 10px;
 }
 
 .action-button {
-    padding: 12px 25px;
-    font-size: 1em;
-    color: white;
     background-color: #3b82f6;
-    /* Bright blue */
+    color: white;
     border: none;
-    border-radius: 8px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 1.1em;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    font-weight: 500;
-    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .action-button:hover {
     background-color: #2563eb;
-    /* Darker blue on hover */
-    transform: translateY(-2px);
-    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .action-button:active {
-    background-color: #1d4ed8;
-    transform: translateY(0px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.action-button.recording {
+    background-color: #ef4444;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+.action-button.apply-ai-button {
+    background-color: #2ecc71;
+    /* Green color for AI button */
+}
+
+.action-button.apply-ai-button:hover {
+    background-color: #27ae60;
+    /* Darker green on hover */
+}
+
+.action-button.apply-ai-button:active {
+    background-color: #1e8449;
 }
 
 .output-container {
