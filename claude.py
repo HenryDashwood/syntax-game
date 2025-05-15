@@ -36,7 +36,7 @@ Modified Code Only:"""
         messages=[
             {
                 "role": "user",
-                "content": f"{objective}\n\n{code}",
+                "content": prompt_content,
             },
         ],
         stop_sequences=["\n```"],  # Attempt to stop Claude before it closes a code block if it adds one.
