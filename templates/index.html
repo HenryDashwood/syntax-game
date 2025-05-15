@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syntax Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Level {{ current_level }}</h1>
+        <div class="level-box">
+            <pre>{{ level_content }}</pre>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let currentLevel = localStorage.getItem('currentLevel');
+            if (!currentLevel) {
+                currentLevel = '1'; // Default to level 1 if not set
+                localStorage.setItem('currentLevel', currentLevel);
+            }
+            // For now, we are not dynamically loading content based on localStorage on the frontend
+            // as app.py is already sending the content for level 1.
+            // This script primarily sets up localStorage for future use.
+            console.log('Current level from localStorage:', currentLevel);
+        });
+    </script>
+</body>
+</html> 
