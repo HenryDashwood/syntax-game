@@ -6,11 +6,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Syntax Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Add some basic styling for the level switcher */
+        .level-switcher-container {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .level-button {
+            padding: 8px 15px;
+            background-color: #4f46e5;
+            /* Indigo */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .level-button:hover {
+            background-color: #4338ca;
+        }
+
+        .level-button.active {
+            background-color: #10b981;
+            /* Green */
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>Level {{ current_level }}</h1>
+        <h1 id="levelTitle">Level {{ current_level }}</h1>
+        <div id="levelSwitcherContainer" class="level-switcher-container">
+            <!-- Level buttons will be dynamically inserted here -->
+        </div>
         <p class="objective-text">{{ objective }}</p>
         <div class="level-box">
             <pre>{{ code }}</pre>
@@ -28,22 +62,94 @@
     <script>
         document.addEventListener('DOMContentLoaded', (event) => {
             let currentLevel = localStorage.getItem('currentLevel');
-            if (!currentLevel) {
-                currentLevel = '1'; // Default to level 1 if not set
-                localStorage.setItem('currentLevel', currentLevel);
-            }
-            // For now, we are not dynamically loading content based on localStorage on the frontend
-            // as app.py is already sending the content for level 1.
-            // This script primarily sets up localStorage for future use.
-            console.log('Current level from localStorage:', currentLevel);
+            const totalLevels = parseInt("{{ total_levels }}") || 0; // Get total_levels from Flask, ensure it's a number
 
+            const levelTitleElement = document.getElementById('levelTitle');
+            const objectiveTextElement = document.querySelector('.objective-text');
+            const codePreElement = document.querySelector('.level-box pre');
             const recordButton = document.getElementById('recordBtn');
             const transcriptionTextElement = document.getElementById('transcriptionText');
             const transcriptionOutputContainer = document.getElementById('transcriptionOutputContainer');
             const applyAiButton = document.getElementById('applyAiChangesBtn');
-            const codePreElement = document.querySelector('.level-box pre'); // Get the <pre> tag for code
+            const levelSwitcherContainer = document.getElementById('levelSwitcherContainer');
 
             let isRecording = false;
+
+            async function loadLevel(levelNumber) {
+                try {
+                    const response = await fetch(`/get_level/${levelNumber}`);
+                    if (!response.ok) {
+                        let errorMsg = 'Failed to load level.';
+                        try {
+                            const errorData = await response.json();
+                            errorMsg = errorData.message || errorMsg;
+                        } catch (e) { /* Ignore if response is not json */ }
+                        console.error('Error loading level:', errorMsg);
+                        alert('Error loading level: ' + errorMsg);
+                        return;
+                    }
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        levelTitleElement.textContent = `Level ${data.current_level}`;
+                        objectiveTextElement.textContent = data.objective;
+                        codePreElement.textContent = data.code;
+                        currentLevel = data.current_level.toString();
+                        localStorage.setItem('currentLevel', currentLevel);
+                        transcriptionTextElement.textContent = '';
+                        transcriptionOutputContainer.style.display = 'none';
+                        updateActiveButton();
+                        console.log(`Level ${data.current_level} loaded.`);
+                    } else {
+                        console.error('Failed to load level:', data.message);
+                        alert('Failed to load level: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Network error loading level:', error);
+                    alert('Network error loading level. Please check your connection.');
+                }
+            }
+
+            function updateActiveButton() {
+                const buttons = levelSwitcherContainer.querySelectorAll('.level-button');
+                buttons.forEach(button => {
+                    if (button.dataset.level === currentLevel) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                });
+            }
+
+            if (totalLevels > 0) {
+                for (let i = 1; i <= totalLevels; i++) {
+                    const button = document.createElement('button');
+                    button.classList.add('level-button');
+                    button.textContent = `Level ${i}`;
+                    button.dataset.level = i.toString();
+                    button.addEventListener('click', () => {
+                        loadLevel(i);
+                    });
+                    levelSwitcherContainer.appendChild(button);
+                }
+            }
+
+            if (!currentLevel || parseInt(currentLevel) > totalLevels || parseInt(currentLevel) < 1 || (totalLevels === 0 && currentLevel !== '1')) {
+                currentLevel = '1';
+            }
+            currentLevel = currentLevel.toString();
+            localStorage.setItem('currentLevel', currentLevel);
+
+            if (totalLevels > 0) { // Only load if there are levels
+                loadLevel(parseInt(currentLevel));
+            } else {
+                // Handle case with no levels (e.g., display a message)
+                levelTitleElement.textContent = "No Levels Available";
+                objectiveTextElement.textContent = "Please add level files to the 'levels' directory.";
+                codePreElement.textContent = "";
+                // Disable record and AI buttons if no levels
+                recordButton.disabled = true;
+                applyAiButton.disabled = true;
+            }
 
             recordButton.addEventListener('click', async () => {
                 if (!isRecording) {

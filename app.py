@@ -1,3 +1,4 @@
+import glob
 import os
 import re
 
@@ -12,6 +13,12 @@ app = Flask(__name__)
 # This is a simplification. For production, you might manage this differently
 # (e.g., per-user sessions if multiple users could record simultaneously).
 recorder = AudioRecorder()
+
+
+def get_total_levels():
+    """Counts the number of level files in the 'levels' directory."""
+    level_files = glob.glob(os.path.join("levels", "level*.txt"))
+    return len(level_files)
 
 
 def parse_level_content(level_number):
