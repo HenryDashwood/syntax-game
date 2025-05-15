@@ -18,11 +18,12 @@ def generate_code(objective: str, code: str) -> str:
     response = client.messages.create(
         model="claude-3-5-sonnet-20240620",
         max_tokens=1024,
+        system="Only return content inside code blocks. Do not include any surrounding text, commentary, or explanation. Don't include backticks or anything like that.",
         messages=[
             {
                 "role": "user",
-                "content": f"Objective: {objective}\n\nCode: {code}",
-            }
+                "content": f"{objective}\n\n{code}",
+            },
         ],
     )
     # Only join .text for blocks that have the text attribute
