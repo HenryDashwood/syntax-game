@@ -6,8 +6,13 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "anthropic>=0.51.0",
+    "dotenv>=0.9.9",
+    "elevenlabs>=1.59.0",
     "flask>=3.1.1",
     "python-dotenv>=1.1.0",
+    "numpy>=2.2.5",
+    "scipy>=1.15.3",
+    "sounddevice>=0.5.1",
 ]
 
 

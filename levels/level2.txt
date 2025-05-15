@@ -1,5 +1,5 @@
 <OBJECTIVE>
-Make the function `that_one` return the square of the input. Leave the functon 'that_won' unchanged.
+Make the function `that_one` return the square of the input. Leave the function 'that_won' unchanged.
 <\OBJECTIVE>
 
 <CODE>
