@@ -1,13 +1,14 @@
-from flask import Flask, render_template
 import os
 import re
+
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
 
 def parse_level_content(level_number):
     """Return objective text and code text for the given level number."""
-    level_file_path = os.path.join('levels', f'level{level_number}.txt')
+    level_file_path = os.path.join("levels", f"level{level_number}.txt")
     objective_lines = []
     code_lines = []
     current_section = None
@@ -15,16 +16,20 @@ def parse_level_content(level_number):
     if not os.path.exists(level_file_path):
         return "Objective not found.", "Code not found."
 
-    with open(level_file_path, 'r') as f:
+    with open(level_file_path, "r") as f:
         for raw_line in f:
-            line = raw_line.rstrip('\n')
+            line = raw_line.rstrip("\n")
             stripped = line.strip()
 
             # Detect section starts
             if stripped.upper() == "<OBJECTIVE>":
                 current_section = "objective"
                 continue
-            elif stripped.upper() in ("</OBJECTIVE>", "<\\OBJECTIVE>", "<\\OBJECTIVE>"):  # handle different closing formats
+            elif stripped.upper() in (
+                "</OBJECTIVE>",
+                "<\\OBJECTIVE>",
+                "<\\OBJECTIVE>",
+            ):  # handle different closing formats
                 current_section = None
                 continue
             elif stripped.upper() == "<CODE>":
@@ -45,17 +50,12 @@ def parse_level_content(level_number):
     return objective_text, code_text
 
 
-@app.route('/')
+@app.route("/")
 def index():
     current_level = 1  # For now, always level 1
     objective, code = parse_level_content(current_level)
-    return render_template(
-        'index.html',
-        current_level=current_level,
-        objective=objective,
-        code=code
-    )
+    return render_template("index.html", current_level=current_level, objective=objective, code=code)
 
 
-if __name__ == '__main__':
-    app.run(debug=True) 
+if __name__ == "__main__":
+    app.run(debug=True)
