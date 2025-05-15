@@ -1,5 +1,5 @@
 <OBJECTIVE>
-Make the function `night` return 
+Make the function `knight` multiply the input by 3, and make the function `night` return the value `second`. 
 <\OBJECTIVE>
 
 <CODE>

@@ -1,5 +1,5 @@
 <OBJECTIVE>
-Change `np.sign` to `np.sin`.
+Change `np.sign` to `np.sin` in `my_function`.
 <\OBJECTIVE>
 
 <CODE>

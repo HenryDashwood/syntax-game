@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 
 from flask import Flask, jsonify, render_template, request
 
@@ -12,6 +13,12 @@ app = Flask(__name__)
 # This is a simplification. For production, you might manage this differently
 # (e.g., per-user sessions if multiple users could record simultaneously).
 recorder = AudioRecorder()
+
+
+def get_total_levels():
+    """Counts the number of level files in the 'levels' directory."""
+    level_files = glob.glob(os.path.join("levels", "level*.txt"))
+    return len(level_files)
 
 
 def parse_level_content(level_number):
@@ -60,9 +67,18 @@ def parse_level_content(level_number):
 
 @app.route("/")
 def index():
-    current_level = 1  # For now, always level 1
+    current_level = 1  # Default to level 1
+    total_levels = get_total_levels()
     objective, code = parse_level_content(current_level)
-    return render_template("index.html", current_level=current_level, objective=objective, code=code)
+    return render_template("index.html", current_level=current_level, objective=objective, code=code, total_levels=total_levels)
+
+
+@app.route("/get_level/<int:level_number>")
+def get_level_route(level_number):
+    objective, code = parse_level_content(level_number)
+    if objective == "Objective not found." and code == "Code not found.":
+        return jsonify({"status": "error", "message": "Level not found"}), 404
+    return jsonify({"status": "success", "objective": objective, "code": code, "current_level": level_number})
 
 
 @app.route("/start_record", methods=["POST"])
