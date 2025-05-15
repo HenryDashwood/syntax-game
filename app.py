@@ -1,10 +1,14 @@
 import os
 import re
-
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
+from voice import AudioRecorder # Assuming voice.py is in the same directory
 
 app = Flask(__name__)
 
+# Instantiate the recorder globally
+# This is a simplification. For production, you might manage this differently
+# (e.g., per-user sessions if multiple users could record simultaneously).
+recorder = AudioRecorder()
 
 def parse_level_content(level_number):
     """Return objective text and code text for the given level number."""
@@ -56,6 +60,31 @@ def index():
     objective, code = parse_level_content(current_level)
     return render_template("index.html", current_level=current_level, objective=objective, code=code)
 
+
+@app.route("/start_record", methods=['POST'])
+def start_record_route():
+    try:
+        recorder.start_recording()
+        return jsonify({"status": "success", "message": "Recording started"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/stop_record", methods=['POST'])
+def stop_record_route():
+    try:
+        result = recorder.stop_recording()
+        if result and hasattr(result, 'text'):
+            transcription_text = result.text
+            return jsonify({"status": "success", "transcription_text": transcription_text})
+        elif result:
+            # If result is not None but doesn't have .text, it's an unexpected format
+            print(f"Unexpected result format: {type(result)} - {result}")
+            return jsonify({"status": "error", "message": "Transcription format unexpected."}), 500
+        else:
+            return jsonify({"status": "success", "message": "No audio data recorded or transcription failed"})
+    except Exception as e:
+        print(f"Error in /stop_record: {e}") # Log the full error on the server
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
