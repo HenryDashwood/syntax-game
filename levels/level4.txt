@@ -1,0 +1,15 @@
+<OBJECTIVE>
+Change `np.sign` to `np.sin`.
+<\OBJECTIVE>
+
+<CODE>
+import numpy as np
+
+my_function(degree):
+    return np.sign(degree)
+<\CODE>
+
+<TESTING>
+for i in range(-10, 10):
+    assert my_function(i) == np.sin(i)
+<\TESTING>

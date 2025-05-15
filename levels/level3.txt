@@ -1,0 +1,24 @@
+<OBJECTIVE>
+Make the function `night` return 
+<\OBJECTIVE>
+
+<CODE>
+def knight(our):
+    brake = 3 * our
+    break = False
+    return break
+
+def night(hour):
+    first = hour * 60
+    second = first * 60
+    thirst = hour * 16
+    sec_and = hour * 16
+    return thirst
+<\CODE>
+
+<TESTING>
+for i in range(10):
+    assert knight(5) == 15
+for i in range(10):
+    assert night(i) == 3600 * i
+<\TESTING>
