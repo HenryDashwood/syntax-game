@@ -9,3 +9,6 @@ uv sync
 ```
 
 From then on to run a python file run `uv run python ...`
+
+
+website: https://19fd-80-208-217-172.ngrok-free.app/
