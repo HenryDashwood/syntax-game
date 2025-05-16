@@ -82,8 +82,16 @@ def parse_level_content(level_number):
 @app.route("/")
 def index():
     current_level = request.args.get("level", "1")
-    objective, code = parse_level_content(current_level)
-    return render_template("index.html", current_level=current_level, objective=objective, code=code)
+    objective, code, testing = parse_level_content(current_level)
+    total_levels = get_total_levels()
+    return render_template(
+        "index.html",
+        current_level=current_level,
+        objective=objective,
+        code=code,
+        testing=testing,
+        total_levels=total_levels,
+    )
 
 
 @app.route("/start_record", methods=["POST"])

@@ -74,7 +74,6 @@
             const transcriptionTextElement = document.getElementById('transcriptionText');
             const transcriptionOutputContainer = document.getElementById('transcriptionOutputContainer');
             const applyAiButton = document.getElementById('applyAiChangesBtn');
-            const codePreElement = document.querySelector('.level-box pre');
             const submitButton = document.getElementById('submitBtn');
             const levelSwitcherContainer = document.getElementById('levelSwitcherContainer');
 
@@ -306,7 +305,7 @@
                     button.textContent = `Level ${i}`;
                     button.dataset.level = i.toString();
                     button.addEventListener('click', () => {
-                        loadLevel(i);
+                        loadLevelContent(i);
                     });
                     levelSwitcherContainer.appendChild(button);
                 }
@@ -319,7 +318,7 @@
             localStorage.setItem('currentLevel', currentLevel);
 
             if (totalLevels > 0) { // Only load if there are levels
-                loadLevel(parseInt(currentLevel));
+                loadLevelContent(parseInt(currentLevel));
             } else {
                 // Handle case with no levels (e.g., display a message)
                 levelTitleElement.textContent = "No Levels Available";
@@ -330,51 +329,52 @@
                 applyAiButton.disabled = true;
             }
 
+            // Handle record button click
             recordButton.addEventListener('click', async () => {
                 if (!isRecording) {
                     // Start recording
-                    transcriptionTextElement.textContent = 'Recording...';
-                    transcriptionOutputContainer.style.display = 'block';
                     try {
-                        const response = await fetch('/start_record', { method: 'POST' });
+                        const response = await fetch('/start_record', {
+                            method: 'POST'
+                        });
                         const data = await response.json();
+
                         if (data.status === 'success') {
-                            console.log(data.message);
                             isRecording = true;
                             recordButton.textContent = 'Stop Recording';
                             recordButton.classList.add('recording');
+                            transcriptionOutputContainer.style.display = 'none';
+                            transcriptionTextElement.textContent = '';
                         } else {
-                            transcriptionTextElement.textContent = 'Error: ' + data.message;
-                            console.error('Error starting recording:', data.message);
+                            showMessage(data.message, true);
                         }
                     } catch (error) {
-                        transcriptionTextElement.textContent = 'Error starting recording: ' + error.message;
-                        console.error('Network error starting recording:', error);
+                        showMessage('Error starting recording: ' + error.message, true);
                     }
                 } else {
                     // Stop recording
-                    transcriptionTextElement.textContent = 'Processing...';
                     try {
-                        const response = await fetch('/stop_record', { method: 'POST' });
+                        const response = await fetch('/stop_record', {
+                            method: 'POST'
+                        });
                         const data = await response.json();
+
                         if (data.status === 'success') {
+                            isRecording = false;
+                            recordButton.textContent = 'Record';
+                            recordButton.classList.remove('recording');
+
                             if (data.transcription_text) {
                                 transcriptionTextElement.textContent = data.transcription_text;
+                                transcriptionOutputContainer.style.display = 'block';
                             } else {
-                                transcriptionTextElement.textContent = data.message || 'No transcription available.';
+                                showMessage(data.message || 'No audio recorded', true);
                             }
-                            console.log('Transcription result:', data);
                         } else {
-                            transcriptionTextElement.textContent = 'Error: ' + data.message;
-                            console.error('Error stopping recording:', data.message);
+                            showMessage(data.message, true);
                         }
                     } catch (error) {
-                        transcriptionTextElement.textContent = 'Error stopping recording: ' + error.message;
-                        console.error('Network error stopping recording:', error);
-                    } finally {
-                        isRecording = false;
-                        recordButton.textContent = 'Record';
-                        recordButton.classList.remove('recording');
+                        showMessage('Error stopping recording: ' + error.message, true);
                     }
                 }
             });
